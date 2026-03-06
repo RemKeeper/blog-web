@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { BlogPost } from "@/lib/posts";
 import { keywordHints } from "@/lib/posts";
@@ -14,27 +14,80 @@ type PostsSearchPanelProps = {
 export function PostsSearchPanel({ posts, recentTags }: PostsSearchPanelProps) {
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const trimmedQuery = query.trim();
   const isAiMode = trimmedQuery.startsWith("/ai");
 
   const previewAiMatches = useMemo(() => posts.slice(0, 3), [posts]);
 
+  useEffect(() => {
+    if (!expanded) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setExpanded(false);
+        setFocused(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [expanded]);
+
   return (
     <div className="space-y-8">
-      <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.03] p-5 sm:p-6">
+      <button
+        type="button"
+        aria-expanded={expanded}
+        onClick={() => setExpanded(true)}
+        className={`fixed left-4 top-24 z-50 flex items-center gap-3 rounded-full border border-white/10 bg-[#111111]/90 px-4 py-3 text-left text-stone-200 shadow-[0_20px_60px_rgba(0,0,0,0.28)] backdrop-blur transition-all duration-300 hover:border-white/20 hover:bg-[#181818] sm:left-6 sm:top-28 ${expanded ? "pointer-events-none -translate-x-6 opacity-0" : "translate-x-0 opacity-100"}`}
+      >
+        <span className="inline-flex size-2 rounded-full bg-stone-300" />
+        <span className="text-sm">搜索文章</span>
+      </button>
+
+      <div
+        className={`fixed inset-0 z-40 bg-black/35 backdrop-blur-[2px] transition duration-300 ${expanded ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"}`}
+        onClick={() => {
+          setExpanded(false);
+          setFocused(false);
+        }}
+      />
+
+      <div
+        className={`fixed left-4 right-4 top-24 z-50 origin-top-left rounded-[1.75rem] border border-white/10 bg-[#111111]/96 p-5 shadow-[0_32px_120px_rgba(0,0,0,0.42)] backdrop-blur transition-all duration-300 sm:left-6 sm:right-auto sm:top-28 sm:w-[32rem] sm:p-6 ${expanded ? "pointer-events-auto translate-y-0 scale-100 opacity-100" : "pointer-events-none -translate-y-4 scale-95 opacity-0"}`}
+      >
         <div className="flex flex-col gap-4">
-          <div>
-            <p className="text-xs uppercase tracking-[0.28em] text-stone-500">
-              Search
-            </p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-stone-100">
-              所有文章
-            </h2>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.28em] text-stone-500">
+                Search
+              </p>
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight text-stone-100">
+                所有文章
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setExpanded(false);
+                setFocused(false);
+              }}
+              className="rounded-full border border-white/10 px-3 py-1.5 text-sm text-stone-400 transition hover:border-white/20 hover:text-white"
+            >
+              关闭
+            </button>
           </div>
 
           <div className="space-y-3">
             <input
+              autoFocus={expanded}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               onFocus={() => setFocused(true)}
